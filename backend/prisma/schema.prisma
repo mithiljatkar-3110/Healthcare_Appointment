@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AppointmentStatus {
+  BOOKED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum NotificationType {
+  BOOKING
+  REMINDER
+  CANCELLATION
+  LEAVE
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+
+  doctor       Doctor?
+  patient      Patient?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Doctor {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @unique @db.Uuid
+  specialization String @db.VarChar(100)
+  workingHours Json
+  slotDuration Int           @default(30)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  leaves       Leave[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Patient {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @unique @db.Uuid
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Appointment {
+  id                     String            @id @default(uuid()) @db.Uuid
+  doctorId               String            @db.Uuid
+  patientId              String            @db.Uuid
+  slotStart              DateTime
+  slotEnd                DateTime
+  symptoms               String?           @db.Text
+  preVisitSummary        Json?
+  postVisitSummary       Json?
+  prescription           Json?
+  status AppointmentStatus @default(BOOKED)
+  calendarEventIdDoctor  String?
+  calendarEventIdPatient String?
+  doctor                 Doctor            @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  patient                Patient           @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  notificationLogs       NotificationLog[]
+  reminderLogs           ReminderLog[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  llmFailed Boolean @default(false)
+
+  @@unique([doctorId, slotStart])
+  @@index([patientId, slotStart])
+  @@index([doctorId, slotStart])
+}
+
+model Leave {
+  id        String   @id @default(uuid()) @db.Uuid
+  doctorId  String   @db.Uuid
+  date      DateTime @db.Date
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([doctorId, date])
+}
+
+model NotificationLog {
+  id               String             @id @default(uuid()) @db.Uuid
+  appointmentId    String             @db.Uuid
+  notificationType NotificationType
+  status           NotificationStatus @default(PENDING)
+  retryCount       Int                @default(0)
+  lastError        String?            @db.Text
+  appointment      Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([appointmentId])
+}
+
+model ReminderLog {
+  id            String      @id @default(uuid()) @db.Uuid
+  appointmentId String      @db.Uuid
+  sentAt        DateTime    @default(now())
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+}
