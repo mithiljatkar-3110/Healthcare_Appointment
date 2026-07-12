@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const { generatePreVisitSummary } = require('./llm.service');
 
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const TRANSACTION_OPTIONS = { maxWait: 5_000, timeout: 10_000 };
@@ -46,7 +47,7 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
   dayStart.setUTCHours(0, 0, 0, 0);
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const appointment = await prisma.$transaction(async (tx) => {
       const [doctor, patient] = await Promise.all([
         tx.doctor.findUnique({
           where: { id: doctorId },
@@ -78,6 +79,26 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
         data: { doctorId, patientId, slotStart: start, slotEnd, symptoms },
       });
     }, TRANSACTION_OPTIONS);
+
+    try {
+      const preVisitSummary = await generatePreVisitSummary(symptoms);
+      return await prisma.appointment.update({
+        where: { id: appointment.id },
+        data: { preVisitSummary, llmFailed: false },
+      });
+    } catch (llmError) {
+      console.error(`Pre-visit summary generation failed for appointment ${appointment.id}:`, llmError.message);
+
+      try {
+        return await prisma.appointment.update({
+          where: { id: appointment.id },
+          data: { llmFailed: true },
+        });
+      } catch (updateError) {
+        console.error(`Unable to mark LLM failure for appointment ${appointment.id}:`, updateError.message);
+        return { ...appointment, llmFailed: true };
+      }
+    }
   } catch (error) {
     if (error.code === 'P2002') {
       throw createError('This slot has already been booked.', 409);

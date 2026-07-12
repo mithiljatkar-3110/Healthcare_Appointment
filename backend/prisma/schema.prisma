@@ -75,6 +75,7 @@ model Appointment {
   slotStart              DateTime
   slotEnd                DateTime
   symptoms               String?           @db.Text
+  clinicalNotes          String?           @db.Text
   preVisitSummary        Json?
   postVisitSummary       Json?
   prescription           Json?
