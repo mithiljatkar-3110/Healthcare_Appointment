@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../config/db');
+const { sendDoctorLeaveNotification } = require('./notification.service');
 
 const BCRYPT_ROUNDS = 12;
 const TRANSACTION_OPTIONS = { maxWait: 5_000, timeout: 10_000 };
@@ -99,7 +100,7 @@ const addLeave = async (doctorId, dateValue) => {
   nextDate.setUTCDate(nextDate.getUTCDate() + 1);
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const { leave, affectedAppointmentIds } = await prisma.$transaction(async (tx) => {
       await getDoctorOrThrow(tx, doctorId);
 
       const affectedAppointments = await tx.appointment.findMany({
@@ -113,9 +114,18 @@ const addLeave = async (doctorId, dateValue) => {
       });
 
       const leave = await tx.leave.create({ data: { doctorId, date } });
+      const affectedAppointmentIds = affectedAppointments.map(({ id }) => id);
 
-      return { leave, affectedAppointmentIds: affectedAppointments.map(({ id }) => id) };
+      return { leave, affectedAppointmentIds };
     }, TRANSACTION_OPTIONS);
+
+    try {
+      await sendDoctorLeaveNotification(affectedAppointmentIds);
+    } catch (notificationError) {
+      console.error(`Doctor leave notifications failed for doctor ${doctorId}:`, notificationError.message);
+    }
+
+    return { leave, affectedAppointmentIds };
   } catch (error) {
     if (error.code === 'P2002') {
       throw createError('A leave record already exists for this doctor and date.', 409);

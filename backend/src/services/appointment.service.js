@@ -1,5 +1,7 @@
 const prisma = require('../config/db');
 const { generatePreVisitSummary } = require('./llm.service');
+const { createAppointmentEvent } = require('./calendar.service');
+const { sendBookingConfirmation } = require('./notification.service');
 
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const TRANSACTION_OPTIONS = { maxWait: 5_000, timeout: 10_000 };
@@ -46,14 +48,37 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
   const dayStart = new Date(start);
   dayStart.setUTCHours(0, 0, 0, 0);
 
+  let doctorName = null;
+  let patientName = null;
+  let slotEnd = null;
+
   try {
     const appointment = await prisma.$transaction(async (tx) => {
       const [doctor, patient] = await Promise.all([
         tx.doctor.findUnique({
           where: { id: doctorId },
-          select: { id: true, workingHours: true, slotDuration: true },
+          select: {
+            id: true,
+            workingHours: true,
+            slotDuration: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
         }),
-        tx.patient.findUnique({ where: { id: patientId }, select: { id: true } }),
+        tx.patient.findUnique({
+          where: { id: patientId },
+          select: {
+            id: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        }),
       ]);
 
       if (!doctor) {
@@ -64,6 +89,9 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
         throw createError('Patient not found.', 404);
       }
 
+      doctorName = doctor.user?.name || null;
+      patientName = patient.user?.name || null;
+
       const leave = await tx.leave.findUnique({
         where: { doctorId_date: { doctorId, date: dayStart } },
         select: { id: true },
@@ -73,12 +101,42 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
         throw createError('The doctor is on leave for the requested date.', 409);
       }
 
-      const slotEnd = validateSlot(doctor, start);
+      slotEnd = validateSlot(doctor, start);
 
       return tx.appointment.create({
         data: { doctorId, patientId, slotStart: start, slotEnd, symptoms },
       });
     }, TRANSACTION_OPTIONS);
+
+    const calendarResult = await createAppointmentEvent({
+      appointmentId: appointment.id,
+      doctorName,
+      patientName,
+      symptoms,
+      slotStart: start,
+      slotEnd,
+    });
+
+    if (calendarResult.eventId) {
+      try {
+        await prisma.appointment.update({
+          where: { id: appointment.id },
+          data: { calendarEventIdDoctor: calendarResult.eventId },
+        });
+      } catch (calendarUpdateError) {
+        console.warn(
+          `Unable to persist Google Calendar event ID for appointment ${appointment.id}: ${calendarUpdateError.message}`,
+        );
+      }
+    } else {
+      console.warn(`Google Calendar integration did not return an event for appointment ${appointment.id}. Booking will continue without a calendar link.`);
+    }
+
+    void sendBookingConfirmation(appointment.id, {
+      calendarHtmlLink: calendarResult.htmlLink,
+    }).catch((error) => {
+      console.error(`Booking confirmation notification failed for appointment ${appointment.id}:`, error.message);
+    });
 
     try {
       const preVisitSummary = await generatePreVisitSummary(symptoms);
