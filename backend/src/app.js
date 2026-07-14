@@ -11,7 +11,19 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  
+  ...((process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean)),
+];
+
+app.use(cors({
+  origin(origin, callback) {
+    // Requests without an Origin header are health checks or server-to-server calls.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS origin is not allowed.'));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api', healthRoutes);
