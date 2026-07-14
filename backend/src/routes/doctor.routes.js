@@ -1,6 +1,8 @@
 const { Router } = require('express');
 const { param, query } = require('express-validator');
+const adminController = require('../controllers/admin.controller');
 const { getDoctorSlots } = require('../controllers/slot.controller');
+const authenticate = require('../middleware/authenticate');
 
 const router = Router();
 
@@ -16,6 +18,8 @@ const validDate = (value) => {
 
   return true;
 };
+
+router.get('/', authenticate, adminController.listDoctors);
 
 router.get(
   '/:doctorId/slots',
