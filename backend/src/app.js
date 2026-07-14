@@ -13,12 +13,15 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://healthcare-appointment-8w5fup9ws-mithiljatkar-4330s-projects.vercel.app',
+  'https://healthcare-appointment-ki9mvejbx-mithiljatkar-4330s-projects.vercel.app/',
 ];
+const vercelDeploymentOrigin = /^https:\/\/healthcare-appointment-[a-z0-9]+-mithiljatkar-4330s-projects\.vercel\.app$/;
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.includes(origin) || vercelDeploymentOrigin.test(origin)) {
+      return callback(null, true);
+    }
     return callback(new Error('CORS origin is not allowed.'));
   },
   credentials: true,
