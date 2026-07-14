@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Compass } from 'lucide-react';
+
+function NotFound() { return <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-100 px-4"><section className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl sm:p-12"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><Compass className="h-8 w-8" /></div><p className="mt-6 text-sm font-semibold uppercase tracking-[.25em] text-blue-600">404</p><h1 className="mt-2 text-3xl font-semibold text-slate-900">This page isn&apos;t available</h1><p className="mt-3 text-sm leading-6 text-slate-600">The link may be outdated, or the page may have moved.</p><Link to="/" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white"><ArrowLeft className="h-4 w-4" />Back to home</Link></section></main>; }
+export default NotFound;

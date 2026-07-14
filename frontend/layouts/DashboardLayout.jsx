@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
@@ -18,7 +18,6 @@ function DashboardLayout() {
           { to: '/admin', label: 'Dashboard', icon: 'LayoutDashboard' },
           { to: '/admin/doctors', label: 'Doctors', icon: 'Stethoscope' },
           { to: '/admin/leaves', label: 'Leaves', icon: 'CalendarX2' },
-          { to: '/admin/appointments', label: 'Appointments', icon: 'CalendarDays' },
         ];
       case 'DOCTOR':
         return [
@@ -30,7 +29,6 @@ function DashboardLayout() {
         return [
           { to: '/patient/book', label: 'Book Appointment', icon: 'CalendarPlus' },
           { to: '/patient/appointments', label: 'My Appointments', icon: 'CalendarRange' },
-          { to: '/patient/profile', label: 'Profile', icon: 'UserCircle' },
         ];
       default:
         return [];
@@ -41,7 +39,7 @@ function DashboardLayout() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Navbar />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:gap-6 sm:py-6 lg:flex-row lg:px-6">
         <button
           type="button"
           className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-3 text-slate-700 shadow-sm lg:hidden"
@@ -57,7 +55,7 @@ function DashboardLayout() {
           <Sidebar navItems={getNavItems()} role={role || 'USER'} />
         </aside>
 
-        <main className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <main className="min-w-0 flex-1 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <Outlet />
         </main>
       </div>

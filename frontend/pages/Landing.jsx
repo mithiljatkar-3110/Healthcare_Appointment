@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { Activity, ArrowRight, CalendarCheck2, FileText, Mail, ShieldCheck, Sparkles, Stethoscope } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';

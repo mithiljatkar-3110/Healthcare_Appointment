@@ -1,252 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
-import { Pencil, Plus, Trash2, CalendarX2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import api from '../../api/api';
 
-const defaultWorkingHours = {
-  mon: ['09:00', '17:00'],
-  tue: ['09:00', '17:00'],
-  wed: ['09:00', '17:00'],
-  thu: ['09:00', '17:00'],
-  fri: ['09:00', '17:00'],
-  sat: ['10:00', '14:00'],
-  sun: ['10:00', '14:00'],
-};
+const defaultWorkingHours = { mon: ['09:00', '17:00'], tue: ['09:00', '17:00'], wed: ['09:00', '17:00'], thu: ['09:00', '17:00'], fri: ['09:00', '17:00'] };
 
 function DoctorModal({ open, mode, doctor, onClose, onSaved }) {
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      specialization: '',
-      slotDuration: 30,
-      workingHours: JSON.stringify(defaultWorkingHours, null, 2),
-    },
-  });
-
-  useEffect(() => {
-    if (open) {
-      if (mode === 'edit' && doctor) {
-        reset({
-          name: doctor.user?.name || '',
-          email: doctor.user?.email || '',
-          password: '',
-          specialization: doctor.specialization || '',
-          slotDuration: doctor.slotDuration || 30,
-          workingHours: JSON.stringify(doctor.workingHours || defaultWorkingHours, null, 2),
-        });
-      } else {
-        reset({
-          name: '',
-          email: '',
-          password: '',
-          specialization: '',
-          slotDuration: 30,
-          workingHours: JSON.stringify(defaultWorkingHours, null, 2),
-        });
-      }
-    }
-  }, [doctor, mode, open, reset]);
-
-  const onSubmit = async (data) => {
-    try {
-      let payload = {
-        specialization: data.specialization,
-        slotDuration: Number(data.slotDuration),
-        workingHours: JSON.parse(data.workingHours),
-      };
-
-      if (mode === 'create') {
-        payload = {
-          ...payload,
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        };
-      } else if (data.password) {
-        payload.password = data.password;
-      }
-
-      if (mode === 'create') {
-        await api.post('/admin/doctors', payload);
-        toast.success('Doctor added successfully.');
-      } else {
-        await api.put(`/admin/doctors/${doctor.id}`, payload);
-        toast.success('Doctor updated successfully.');
-      }
-
-      onSaved();
-      onClose();
-    } catch (error) {
-      toast.error(error?.response?.data?.message || 'Unable to save doctor.');
-    }
-  };
-
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ defaultValues: { name: '', email: '', password: '', specialization: '', slotDuration: 30, workingHours: JSON.stringify(defaultWorkingHours, null, 2) } });
+  useEffect(() => { if (open) reset(mode === 'edit' ? { name: doctor?.user?.name || '', email: doctor?.user?.email || '', password: '', specialization: doctor?.specialization || '', slotDuration: doctor?.slotDuration || 30, workingHours: JSON.stringify(doctor?.workingHours || defaultWorkingHours, null, 2) } : { name: '', email: '', password: '', specialization: '', slotDuration: 30, workingHours: JSON.stringify(defaultWorkingHours, null, 2) }); }, [doctor, mode, open, reset]);
+  const submit = async (data) => { try { const base = { specialization: data.specialization, slotDuration: Number(data.slotDuration), workingHours: JSON.parse(data.workingHours) }; if (mode === 'create') { await api.post('/admin/doctors', { ...base, name: data.name, email: data.email, password: data.password }); toast.success('Doctor added successfully.'); } else { await api.put(`/admin/doctors/${doctor.id}`, base); toast.success('Doctor updated successfully.'); } onSaved(); onClose(); } catch (error) { toast.error(error?.response?.data?.message || 'Unable to save doctor.'); } };
   if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">{mode === 'create' ? 'Add Doctor' : 'Edit Doctor'}</h2>
-            <p className="mt-1 text-sm text-slate-600">Fill in the doctor profile details below.</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
-        </div>
-
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          {mode === 'create' ? (
-            <>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
-                <input className="w-full rounded-xl border border-slate-300 px-3 py-2" {...register('name', { required: 'Name is required' })} />
-                {errors.name ? <p className="mt-1 text-sm text-red-600">{errors.name.message}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-                <input className="w-full rounded-xl border border-slate-300 px-3 py-2" {...register('email', { required: 'Email is required' })} />
-                {errors.email ? <p className="mt-1 text-sm text-red-600">{errors.email.message}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
-                <input type="password" className="w-full rounded-xl border border-slate-300 px-3 py-2" {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Minimum 8 characters' } })} />
-                {errors.password ? <p className="mt-1 text-sm text-red-600">{errors.password.message}</p> : null}
-              </div>
-            </>
-          ) : null}
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Specialization</label>
-            <input className="w-full rounded-xl border border-slate-300 px-3 py-2" {...register('specialization', { required: 'Specialization is required' })} />
-            {errors.specialization ? <p className="mt-1 text-sm text-red-600">{errors.specialization.message}</p> : null}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Slot Duration (minutes)</label>
-            <input type="number" className="w-full rounded-xl border border-slate-300 px-3 py-2" {...register('slotDuration', { required: true, min: 5 })} />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Working Hours (JSON)</label>
-            <textarea rows="8" className="w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm" {...register('workingHours', { required: 'Working hours are required' })} />
-            {errors.workingHours ? <p className="mt-1 text-sm text-red-600">{errors.workingHours.message}</p> : null}
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
-              {isSubmitting ? 'Saving...' : mode === 'create' ? 'Add Doctor' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"><div className="flex justify-between gap-4"><div><h2 className="text-xl font-semibold text-slate-900">{mode === 'create' ? 'Add doctor' : 'Edit doctor'}</h2><p className="mt-1 text-sm text-slate-600">Maintain the provider profile and availability.</p></div><button type="button" onClick={onClose} aria-label="Close dialog" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button></div><form className="mt-6 space-y-4" onSubmit={handleSubmit(submit)}>{mode === 'create' ? <div className="grid gap-4 sm:grid-cols-2"><Field label="Name" error={errors.name}><input className="input" {...register('name', { required: 'Name is required' })} /></Field><Field label="Email" error={errors.email}><input type="email" className="input" {...register('email', { required: 'Email is required' })} /></Field><Field label="Temporary password" error={errors.password}><input type="password" className="input" {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Minimum 8 characters' } })} /></Field></div> : null}<div className="grid gap-4 sm:grid-cols-2"><Field label="Specialization" error={errors.specialization}><input className="input" {...register('specialization', { required: 'Specialization is required' })} /></Field><Field label="Slot duration (minutes)"><input type="number" min="5" className="input" {...register('slotDuration', { required: true, min: 5 })} /></Field></div><Field label="Working hours (JSON)" error={errors.workingHours}><textarea rows="7" className="input font-mono text-xs" {...register('workingHours', { required: 'Working hours are required' })} /></Field><div className="flex justify-end gap-3 pt-2"><button type="button" onClick={onClose} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="submit" disabled={isSubmitting} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{isSubmitting ? 'Saving...' : 'Save doctor'}</button></div></form></div></div>;
 }
+function Field({ label, error, children }) { return <div><label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>{children}{error ? <p className="mt-1 text-sm text-rose-600">{error.message}</p> : null}</div>; }
+function DeleteDialog({ doctor, deleting, onCancel, onConfirm }) { if (!doctor) return null; return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4"><div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"><div className="rounded-2xl bg-rose-50 p-3 text-rose-600"><Trash2 className="h-5 w-5" /></div><h2 className="mt-4 text-xl font-semibold text-slate-900">Delete doctor?</h2><p className="mt-2 text-sm text-slate-600">This permanently removes <span className="font-semibold text-slate-800">{doctor.user?.name}</span>.</p><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onCancel} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button><button type="button" disabled={deleting} onClick={onConfirm} className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{deleting ? 'Deleting...' : 'Delete doctor'}</button></div></div></div>; }
 
 function DoctorsPage() {
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState('create');
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-
-  const loadDoctors = async () => {
-    try {
-      const response = await api.get('/admin/doctors');
-      setDoctors(response.data?.doctors || []);
-    } catch (error) {
-      toast.error(error?.response?.data?.message || 'Unable to load doctors.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDoctors();
-  }, []);
-
-  const handleAdd = () => {
-    setMode('create');
-    setSelectedDoctor(null);
-    setModalOpen(true);
-  };
-
-  const handleEdit = (doctor) => {
-    setMode('edit');
-    setSelectedDoctor(doctor);
-    setModalOpen(true);
-  };
-
-  const handleDelete = async (doctor) => {
-    if (!window.confirm(`Delete ${doctor.user?.name || 'this doctor'}?`)) return;
-
-    try {
-      await api.delete(`/admin/doctors/${doctor.id}`);
-      toast.success('Doctor deleted.');
-      loadDoctors();
-    } catch (error) {
-      toast.error(error?.response?.data?.message || 'Unable to delete doctor.');
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Doctors</h1>
-          <p className="mt-2 text-sm text-slate-600">Manage your doctor roster and working hours.</p>
-        </div>
-        <button onClick={handleAdd} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white">
-          <Plus className="h-4 w-4" />
-          Add Doctor
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-500">Loading doctors...</div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Name</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Email</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Specialization</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Slot Duration</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {doctors.map((doctor) => (
-                <tr key={doctor.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{doctor.user?.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{doctor.user?.email}</td>
-                  <td className="px-4 py-3 text-slate-600">{doctor.specialization}</td>
-                  <td className="px-4 py-3 text-slate-600">{doctor.slotDuration} min</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleEdit(doctor)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-blue-500 hover:text-blue-600">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => handleDelete(doctor)} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-red-500 hover:text-red-600">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <DoctorModal open={modalOpen} mode={mode} doctor={selectedDoctor} onClose={() => setModalOpen(false)} onSaved={loadDoctors} />
-    </div>
-  );
+  const [doctors, setDoctors] = useState([]); const [loading, setLoading] = useState(true); const [search, setSearch] = useState(''); const [modal, setModal] = useState(null); const [doctorToDelete, setDoctorToDelete] = useState(null); const [deleting, setDeleting] = useState(false);
+  const loadDoctors = async () => { try { setLoading(true); const response = await api.get('/admin/doctors'); setDoctors(response.data?.doctors || []); } catch (error) { toast.error(error?.response?.data?.message || 'Unable to load doctors.'); } finally { setLoading(false); } };
+  useEffect(() => { loadDoctors(); }, []);
+  const visibleDoctors = useMemo(() => doctors.filter((doctor) => `${doctor.user?.name || ''} ${doctor.user?.email || ''} ${doctor.specialization || ''}`.toLowerCase().includes(search.trim().toLowerCase())), [doctors, search]);
+  const removeDoctor = async () => { if (!doctorToDelete) return; try { setDeleting(true); await api.delete(`/admin/doctors/${doctorToDelete.id}`); toast.success('Doctor deleted.'); setDoctorToDelete(null); loadDoctors(); } catch (error) { toast.error(error?.response?.data?.message || 'Unable to delete doctor.'); } finally { setDeleting(false); } };
+  return <div className="space-y-6"><div className="flex flex-col justify-between gap-4 md:flex-row md:items-center"><div><p className="text-sm font-semibold uppercase tracking-[.2em] text-blue-600">Provider management</p><h1 className="mt-2 text-3xl font-semibold text-slate-900">Doctors</h1><p className="mt-2 text-sm text-slate-600">Manage your roster, specialties, and working hours.</p></div><button type="button" onClick={() => setModal({ mode: 'create' })} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white"><Plus className="h-4 w-4" />Add doctor</button></div><div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><label className="mb-2 block text-sm font-medium text-slate-700" htmlFor="doctor-search">Search doctors</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input id="doctor-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, email, or specialty" className="w-full rounded-xl border border-slate-300 py-3 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" /></div></div>{loading ? <div className="h-64 animate-pulse rounded-3xl bg-slate-100" /> : <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm"><table className="min-w-[720px] w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50"><tr><th className="px-5 py-4 text-left font-semibold text-slate-700">Doctor</th><th className="px-5 py-4 text-left font-semibold text-slate-700">Specialization</th><th className="px-5 py-4 text-left font-semibold text-slate-700">Slot duration</th><th className="px-5 py-4 text-right font-semibold text-slate-700">Actions</th></tr></thead><tbody className="divide-y divide-slate-200">{visibleDoctors.length ? visibleDoctors.map((doctor) => <tr key={doctor.id} className="hover:bg-slate-50"><td className="px-5 py-4"><p className="font-semibold text-slate-900">{doctor.user?.name}</p><p className="mt-1 text-slate-500">{doctor.user?.email}</p></td><td className="px-5 py-4 text-slate-600">{doctor.specialization}</td><td className="px-5 py-4 text-slate-600">{doctor.slotDuration} min</td><td className="px-5 py-4"><div className="flex justify-end gap-2"><button type="button" onClick={() => setModal({ mode: 'edit', doctor })} aria-label={`Edit ${doctor.user?.name}`} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-blue-400 hover:text-blue-600"><Pencil className="h-4 w-4" /></button><button type="button" onClick={() => setDoctorToDelete(doctor)} aria-label={`Delete ${doctor.user?.name}`} className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-rose-400 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button></div></td></tr>) : <tr><td colSpan="4" className="px-5 py-12 text-center text-slate-500">No doctors match your search.</td></tr>}</tbody></table></div>}<DoctorModal open={Boolean(modal)} mode={modal?.mode} doctor={modal?.doctor} onClose={() => setModal(null)} onSaved={loadDoctors} /><DeleteDialog doctor={doctorToDelete} deleting={deleting} onCancel={() => setDoctorToDelete(null)} onConfirm={removeDoctor} /></div>;
 }
-
 export default DoctorsPage;

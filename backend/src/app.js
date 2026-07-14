@@ -6,6 +6,7 @@ const adminRoutes = require('./routes/admin.routes');
 const doctorRoutes = require('./routes/doctor.routes');
 const appointmentRoutes = require('./routes/appointment.routes');
 const consultationRoutes = require('./routes/consultation.routes');
+const doctorAppointmentRoutes = require('./routes/doctor-appointment.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/appointments', consultationRoutes);
+app.use('/api/doctor', doctorAppointmentRoutes);
 
 app.use(errorHandler);
 

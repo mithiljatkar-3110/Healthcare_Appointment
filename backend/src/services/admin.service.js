@@ -67,6 +67,20 @@ const getDoctors = () =>
     orderBy: { createdAt: 'desc' },
   });
 
+const getLeaves = () =>
+  prisma.leave.findMany({
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          specialization: true,
+          user: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: [{ date: 'asc' }, { createdAt: 'desc' }],
+  });
+
 const getDoctor = (id) => getDoctorOrThrow(prisma, id);
 
 const updateDoctor = async (id, updates) => {
@@ -148,6 +162,7 @@ const removeLeave = async (doctorId, leaveId) => {
 module.exports = {
   createDoctor,
   getDoctors,
+  getLeaves,
   getDoctor,
   updateDoctor,
   deleteDoctor,

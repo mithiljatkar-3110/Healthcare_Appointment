@@ -31,6 +31,15 @@ const listDoctors = async (_req, res, next) => {
   }
 };
 
+const listLeaves = async (_req, res, next) => {
+  try {
+    const leaves = await adminService.getLeaves();
+    res.status(200).json({ leaves });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getDoctor = async (req, res, next) => {
   try {
     validateRequest(req);
@@ -91,6 +100,7 @@ const removeLeave = async (req, res, next) => {
 module.exports = {
   createDoctor,
   listDoctors,
+  listLeaves,
   getDoctor,
   updateDoctor,
   deleteDoctor,

@@ -67,6 +67,7 @@ router.post(
 );
 
 router.get('/doctors', adminController.listDoctors);
+router.get('/leaves', adminController.listLeaves);
 router.get('/doctors/:id', [doctorId()], adminController.getDoctor);
 router.put(
   '/doctors/:id',

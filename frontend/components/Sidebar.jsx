@@ -8,7 +8,6 @@ import {
   FileText,
   LayoutDashboard,
   Stethoscope,
-  UserCircle,
 } from 'lucide-react';
 
 const iconMap = {
@@ -20,7 +19,6 @@ const iconMap = {
   FileText,
   CalendarPlus,
   CalendarRange,
-  UserCircle,
 };
 
 function Sidebar({ navItems, role }) {
