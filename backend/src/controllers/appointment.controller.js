@@ -14,6 +14,7 @@ const createAppointment = async (req, res, next) => {
   try {
     const appointment = await appointmentService.createAppointment(
       matchedData(req, { locations: ['body'] }),
+      req.user.userId,
     );
     return res.status(201).json({ appointment });
   } catch (error) {

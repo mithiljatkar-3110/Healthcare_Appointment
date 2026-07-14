@@ -4,15 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { ArrowRight, CalendarDays, Search, Stethoscope } from 'lucide-react';
 import api from '../../api/api';
-import { useAuth } from '../../context/AuthContext';
-
-const resolvePatientId = (authUser) => {
-  if (!authUser) return null;
-
-  if (authUser.patient?.id) return authUser.patient.id;
-  if (authUser.patientId) return authUser.patientId;
-  return null;
-};
 
 const formatWorkingHours = (workingHours) => {
   if (!workingHours || typeof workingHours !== 'object') return 'Flexible schedule';
@@ -27,7 +18,6 @@ const formatWorkingHours = (workingHours) => {
 };
 
 function PatientDashboard() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
@@ -112,18 +102,11 @@ function PatientDashboard() {
       return;
     }
 
-    const patientId = resolvePatientId(user);
-    if (!patientId) {
-      toast.error('Your patient profile could not be resolved.');
-      return;
-    }
-
     setSubmitting(true);
     try {
       const slotStart = `${selectedDate}T${selectedSlot}:00.000Z`;
       await api.post('/appointments', {
         doctorId: selectedDoctorId,
-        patientId,
         slotStart,
         symptoms: data.symptoms || '',
       });

@@ -43,7 +43,7 @@ const validateSlot = (doctor, slotStart) => {
   return new Date(slotStart.getTime() + doctor.slotDuration * 60_000);
 };
 
-const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) => {
+const createAppointment = async ({ doctorId, slotStart, symptoms }, userId) => {
   const start = new Date(slotStart);
   const dayStart = new Date(start);
   dayStart.setUTCHours(0, 0, 0, 0);
@@ -69,7 +69,7 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
           },
         }),
         tx.patient.findUnique({
-          where: { id: patientId },
+          where: { userId },
           select: {
             id: true,
             user: {
@@ -86,7 +86,7 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
       }
 
       if (!patient) {
-        throw createError('Patient not found.', 404);
+        throw createError('A patient profile was not found for this account.', 404);
       }
 
       doctorName = doctor.user?.name || null;
@@ -104,7 +104,7 @@ const createAppointment = async ({ doctorId, patientId, slotStart, symptoms }) =
       slotEnd = validateSlot(doctor, start);
 
       return tx.appointment.create({
-        data: { doctorId, patientId, slotStart: start, slotEnd, symptoms },
+        data: { doctorId, patientId: patient.id, slotStart: start, slotEnd, symptoms },
       });
     }, TRANSACTION_OPTIONS);
 

@@ -1,6 +1,8 @@
 const { Router } = require('express');
 const { body } = require('express-validator');
 const { createAppointment } = require('../controllers/appointment.controller');
+const authenticate = require('../middleware/authenticate');
+const authorize = require('../middleware/authorize');
 
 const router = Router();
 
@@ -19,9 +21,10 @@ const isUtcDateTime = (value) => {
 
 router.post(
   '/',
+  authenticate,
+  authorize('PATIENT'),
   [
     body('doctorId').isUUID().withMessage('doctorId must be a UUID.'),
-    body('patientId').isUUID().withMessage('patientId must be a UUID.'),
     body('slotStart').custom(isUtcDateTime),
     body('symptoms').optional({ nullable: true }).trim().isLength({ max: 5_000 }).withMessage('symptoms must not exceed 5000 characters.'),
   ],
