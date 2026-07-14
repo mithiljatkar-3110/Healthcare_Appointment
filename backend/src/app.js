@@ -11,11 +11,17 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://healthcare-appointment-8w5fup9ws-mithiljatkar-4330s-projects.vercel.app',
+];
+
 app.use(cors({
-    origin:[
-        "healthcare-appointment-oohwq11h8-mithiljatkar-4330s-projects.vercel.app"
-    ],
-    credentials:true
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS origin is not allowed.'));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 
