@@ -16,6 +16,7 @@ const toSafeUser = (user) => ({
   email: user.email,
   role: user.role,
   createdAt: user.createdAt,
+  ...(user.patient && { patient: { id: user.patient.id } }),
 });
 
 const registerPatient = async ({ name, email, password }) => {
@@ -47,7 +48,10 @@ const registerPatient = async ({ name, email, password }) => {
 };
 
 const login = async ({ email, password }) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { patient: { select: { id: true } } },
+  });
 
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     throw createError('Invalid email or password.', 401);

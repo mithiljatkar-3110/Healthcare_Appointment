@@ -6,23 +6,12 @@ import { ArrowRight, CalendarDays, Search, Stethoscope } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 
-const DEMO_PATIENT_IDS = {
-  'alice@gmail.com': 'f45f05d2-3ade-4224-b9bb-6a3dff5a836c',
-  'bob@gmail.com': '8ac4e609-c8ef-42b2-a34f-49264011c0f5',
-  'mithil@gmail.com': '2de89830-8a90-4e88-9520-5e77ec1f526d',
-  'mithil.jatkar23@vit.edu': '81fb380e-ba95-434a-8502-c7949cbd9dc1',
-};
-
 const resolvePatientId = (authUser) => {
   if (!authUser) return null;
 
   if (authUser.patient?.id) return authUser.patient.id;
   if (authUser.patientId) return authUser.patientId;
-  if (authUser.email && DEMO_PATIENT_IDS[authUser.email]) {
-    return DEMO_PATIENT_IDS[authUser.email];
-  }
-
-  return authUser.id || null;
+  return null;
 };
 
 const formatWorkingHours = (workingHours) => {
