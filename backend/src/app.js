@@ -12,8 +12,8 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 const allowedOrigins = [
+'https://healthcare-appointment-indol.vercel.app','https://healthcare-appointment-git-main-mithiljatkar-4330s-projects.vercel.app','healthcare-appointment-dde4ono1g-mithiljatkar-4330s-projects.vercel.app',
   'http://localhost:5173',
-  'https://healthcare-appointment-ki9mvejbx-mithiljatkar-4330s-projects.vercel.app/',
 ];
 const vercelDeploymentOrigin = /^https:\/\/healthcare-appointment-[a-z0-9]+-mithiljatkar-4330s-projects\.vercel\.app$/;
 
